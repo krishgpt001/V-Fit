@@ -13,10 +13,18 @@
 
     .vr-only-note{display:none}
     @media (min-width: 700px){.screen:not(.active){pointer-events:none}}
+
+<style id="ar-only-ui">
+/* Immersive AR: real world is the only background. Keep only the coach and control surface. */
+body.ar-active #app{display:none!important}
+body.ar-active #vrMenuToggle{display:none!important}
+body.ar-active #vrMenuRoot{display:block!important}
+body.ar-active .a-enter-vr,body.ar-active .a-enter-ar{display:none!important}
+</style>
 </style>
 </head>
 <body>
-<a-scene id="scene" renderer="antialias: true; alpha: true; colorManagement: true; highRefreshRate: true" background="color: transparent" xr-mode-ui="XRMode: xr" webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor, hand-tracking, dom-overlay">
+<a-scene id="scene" renderer="antialias: true; alpha: true; colorManagement: true; highRefreshRate: true" background="color: transparent" xr-mode-ui="XRMode: xr; enterAREnabled: false; enterVREnabled: false" webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor, hand-tracking, dom-overlay">
   <a-assets timeout="5000"></a-assets>
   <a-entity id="environment">
     <a-plane rotation="-90 0 0" width="40" height="40" color="#151b20"></a-plane>
@@ -41,15 +49,12 @@
   <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .vr-target; far: 8; interval: 50" cursor="rayOrigin: entity"></a-entity>
 
   <!-- VR-only floating control surface. This is separate from the desktop HTML UI so it remains usable in immersive mode. -->
-  <a-entity id="vrMenuRoot" visible="false" position="0 0 0">
-    <a-entity id="vrMenuPanel" position="0 -0.68 -1.55" scale="0.82 0.82 0.82">
+  <a-entity id="vrMenuRoot" visible="false" position="0.78 -0.22 -1.55">
+    <a-entity id="vrMenuPanel" position="0 0 0" scale="0.62 0.62 0.62">
       <a-plane width="2.9" height="2.35" color="#0b1117" material="opacity:.94; shader:flat" geometry="primitive:plane" class="vr-ui-surface"></a-plane>
       <a-text value="VR FIT COMPANION" align="center" color="#57d68d" width="3.4" position="0 1.00 .02"></a-text>
       <a-text id="vrMenuExercise" value="Exercise: Squat" align="center" color="#ffffff" width="3.2" position="0 .72 .02"></a-text>
 
-      <a-box id="vrMenuLibrary" class="vr-target" width="1.15" height=".38" depth=".06" color="#17232d" position="-.62 .30 .03">
-        <a-text value="LIBRARY" align="center" color="#ffffff" width="2.2" position="0 0 .04"></a-text>
-      </a-box>
       <a-box id="vrMenuStart" class="vr-target" width="1.15" height=".38" depth=".06" color="#57d68d" position=".62 .30 .03">
         <a-text id="vrMenuStartText" value="START" align="center" color="#07110b" width="2.2" position="0 0 .04"></a-text>
       </a-box>
@@ -154,7 +159,7 @@ function formatTime(s){return `${String(Math.floor(s/60)).padStart(2,'0')}:${Str
 function updateWorkout(){const e=exercises[state.exercise];$('wRep').textContent=state.rep;$('wTarget').textContent=e.reps;$('wSet').textContent=`${state.set}/${e.sets}`;$('wProgress').style.width=Math.min(100,state.rep/e.reps*100)+'%';$('wSpeed').textContent=state.speed+'×';$('wPlay').textContent=state.playing?'Running':'Start'}
 function completeSet(){const e=exercises[state.exercise];state.totalSets++;state.completedExercises.add(state.exercise);toast('Set complete — take a short rest.');if(state.set<e.sets){state.set++;state.rep=0;state.animStart=0;lastCycle=-1;updateWorkout()}else{nextExercise()}}
 function nextExercise(){const ids=Object.keys(exercises),i=ids.indexOf(state.exercise);const next=ids[(i+1)%ids.length];state.exercise=next;const e=exercises[next];state.rep=0;state.set=1;state.animStart=0;lastCycle=-1;$('wName').textContent=e.name;$('wTarget').textContent=e.reps;$('wSet').textContent=`1/${e.sets}`;toast('Next exercise loaded.');updateWorkout();buildCoach(next)}
-function finishWorkout(){if(state.timer)clearInterval(state.timer);state.playing=false;$('sExercises').textContent=Math.max(1,state.completedExercises.size);$('sSets').textContent=state.totalSets;$('sReps').textContent=state.totalReps;$('sDuration').textContent='Duration: '+formatTime(state.elapsed);show('summary')}
+function finishWorkout(){if(state.timer)clearInterval(state.timer);state.playing=false;if(document.body.classList.contains('ar-active')){state.rep=0;state.set=1;state.animStart=0;lastCycle=-1;state.elapsed=0;updateWorkout();setVrMenuVisible(true);updateVrMenu();toast('Session ended — choose another exercise.');return;}$('sExercises').textContent=Math.max(1,state.completedExercises.size);$('sSets').textContent=state.totalSets;$('sReps').textContent=state.totalReps;$('sDuration').textContent='Duration: '+formatTime(state.elapsed);show('summary')}
 function openInfo(title,text){$('modalTitle').textContent=title;$('modalText').textContent=text;$('infoModal').classList.add('show')}function vrIndex(){return ['squat','pushup','row','plank'].filter(id=>exercises[id]);}
 function updateVrMenu(){const e=exercises[state.exercise];$('vrMenuExercise').setAttribute('value',`Exercise: ${e.name}`);$('vrMenuStartText').setAttribute('value',state.playing?'RUNNING':'START');$('vrMenuPauseText').setAttribute('value',state.playing?'PAUSE':'RESUME');}
 function setVrMenuVisible(v){$('vrMenuRoot').setAttribute('visible',v);updateVrMenu();}
@@ -185,10 +190,41 @@ function setVrPresentation(active){
   }
 }
 
-function initVrUI(){const cam=$('cameraRig').querySelector('a-camera');if(cam){cam.appendChild($('vrMenuRoot'));cam.appendChild($('vrMenuToggle'));}wireVrButton('vrMenuToggle',()=>setVrMenuVisible(!$('vrMenuRoot').getAttribute('visible')));wireVrButton('vrMenuLibrary',()=>{setVrMenuVisible(true);vrSelect('squat');show('detail');});wireVrButton('vrMenuStart',vrStart);wireVrButton('vrMenuPause',vrPause);wireVrButton('vrMenuPrev',()=>vrCycle(-1));wireVrButton('vrMenuNext',()=>vrCycle(1));wireVrButton('vrPickPushup',()=>vrSelect('pushup'));wireVrButton('vrPickRow',()=>vrSelect('row'));wireVrButton('vrPickPlank',()=>vrSelect('plank'));}
+function initVrUI(){const cam=$('cameraRig').querySelector('a-camera');if(cam){cam.appendChild($('vrMenuRoot'));cam.appendChild($('vrMenuToggle'));}wireVrButton('vrMenuToggle',()=>setVrMenuVisible(!$('vrMenuRoot').getAttribute('visible')));wireVrButton('vrMenuLibrary',()=>{setVrMenuVisible(true);vrSelect('squat');});wireVrButton('vrMenuStart',vrStart);wireVrButton('vrMenuPause',vrPause);wireVrButton('vrMenuPrev',()=>vrCycle(-1));wireVrButton('vrMenuNext',()=>vrCycle(1));wireVrButton('vrPickPushup',()=>vrSelect('pushup'));wireVrButton('vrPickRow',()=>vrSelect('row'));wireVrButton('vrPickPlank',()=>vrSelect('plank'));}
 
-$('startBtn').onclick=()=>startExercise('squat');$('libraryBtn').onclick=()=>{buildFilters();renderLibrary();show('library')};$('backHome').onclick=()=>show('home');$('backLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('detailStart').onclick=()=>startExercise();$('detailWorkout').onclick=()=>startExercise();$('playBtn').onclick=()=>{state.playing=true;state.animStart=0;lastCycle=-1};$('pauseBtn').onclick=()=>state.playing=false;$('restartBtn').onclick=()=>{state.animStart=0;state.rep=0;lastCycle=-1};document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);updateWorkout()});document.querySelectorAll('.angle').forEach(b=>b.onclick=()=>{state.angle=b.dataset.angle;updateCoachVisibility()});$('wPlay').onclick=()=>{state.playing=true};$('wPause').onclick=()=>{state.playing=false};$('wComplete').onclick=()=>{state.rep=exercises[state.exercise].reps;updateWorkout();completeSet()};$('wNext').onclick=nextExercise;$('endWorkout').onclick=finishWorkout;$('restartSession').onclick=()=>startExercise('squat');$('summaryLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('summaryHome').onclick=()=>show('home');$('howBtn').onclick=()=>openInfo('How it works','Choose an exercise, study the procedural 3D coach, then start a guided set. On Quest, use the AR button when available for real-world camera passthrough; the virtual gym is hidden and the coach stays front-left. Controllers use laser pointers and triggers for UI selection.');$('settingsBtn').onclick=()=>openInfo('Settings','The prototype uses snap-friendly controller interaction, smooth A-Frame movement, a dark performance-oriented environment and local-only workout state. Browser support for WebXR varies by device.');$('closeModal').onclick=()=>$('infoModal').classList.remove('show');
-const scene=$('scene');scene.addEventListener('enter-vr',()=>{setVrPresentation(true);$('vrStatus').textContent='VR active';$('vrMenuToggle').setAttribute('visible',true);setVrMenuVisible(true);toast('AR mode: look slightly down to access workout controls');});scene.addEventListener('exit-vr',()=>{setVrPresentation(false);$('vrStatus').textContent='Browser mode';$('vrMenuToggle').setAttribute('visible',false);setVrMenuVisible(false)});if(!navigator.xr)$('vrStatus').textContent='WebXR unavailable';initVrUI();buildFilters();renderLibrary();openDetail('squat');show('home');
+$('startBtn').onclick=()=>startExercise('squat');$('libraryBtn').onclick=()=>{buildFilters();renderLibrary();show('library')};$('backHome').onclick=()=>show('home');$('backLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('detailStart').onclick=()=>{startExercise();enterAROnly();};$('detailWorkout').onclick=()=>startExercise();$('playBtn').onclick=()=>{state.playing=true;state.animStart=0;lastCycle=-1};$('pauseBtn').onclick=()=>state.playing=false;$('restartBtn').onclick=()=>{state.animStart=0;state.rep=0;lastCycle=-1};document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);updateWorkout()});document.querySelectorAll('.angle').forEach(b=>b.onclick=()=>{state.angle=b.dataset.angle;updateCoachVisibility()});$('wPlay').onclick=()=>{state.playing=true};$('wPause').onclick=()=>{state.playing=false};$('wComplete').onclick=()=>{state.rep=exercises[state.exercise].reps;updateWorkout();completeSet()};$('wNext').onclick=nextExercise;$('endWorkout').onclick=finishWorkout;$('restartSession').onclick=()=>startExercise('squat');$('summaryLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('summaryHome').onclick=()=>show('home');$('howBtn').onclick=()=>openInfo('How it works','Choose an exercise, study the procedural 3D coach, then start a guided set. On Quest, use the AR button when available for real-world camera passthrough; the virtual gym is hidden and the coach stays front-left. Controllers use laser pointers and triggers for UI selection.');$('settingsBtn').onclick=()=>openInfo('Settings','The prototype uses snap-friendly controller interaction, smooth A-Frame movement, a dark performance-oriented environment and local-only workout state. Browser support for WebXR varies by device.');$('closeModal').onclick=()=>$('infoModal').classList.remove('show');
+const scene=$('scene');
+async function enterAROnly(){
+  try{
+    if(navigator.xr && await navigator.xr.isSessionSupported('immersive-ar')){
+      // A-Frame owns the WebXR session; request AR through its public entry point.
+      scene.enterVR({mode:'immersive-ar'});
+      return;
+    }
+  }catch(e){ console.warn('Immersive AR unavailable',e); }
+  toast('Immersive AR is not available on this browser/device.');
+}
+scene.addEventListener('enter-vr',()=>{
+  setVrPresentation(true);
+  document.body.classList.add('ar-active');
+  document.querySelectorAll('#app .screen').forEach(x=>x.classList.remove('active'));
+  $('vrStatus').textContent='AR active';
+  $('vrMenuToggle').setAttribute('visible',false);
+  setVrMenuVisible(true);
+  updateVrMenu();
+});
+scene.addEventListener('exit-vr',()=>{
+  setVrPresentation(false);
+  document.body.classList.remove('ar-active');
+  $('vrStatus').textContent='Browser mode';
+  $('vrMenuToggle').setAttribute('visible',false);
+  setVrMenuVisible(false);
+});
+if(!navigator.xr)$('vrStatus').textContent='WebXR unavailable';
+// The product is AR-first: no VR/AR chooser is exposed.
+$('startBtn').onclick=()=>{startExercise('squat');enterAROnly();};
+$('libraryBtn').onclick=()=>{buildFilters();renderLibrary();show('library');};
+initVrUI();buildFilters();renderLibrary();openDetail('squat');show('home');
 </script>
 </body>
 </html>
