@@ -1,20 +1,12 @@
-# VR Fit Companion — Desktop + Front Camera
+# VR Fit Companion — Desktop Exercise Update
 
 Desktop-only A-Frame workout companion.
 
-## Features
-- Crisp desktop workout UI
-- Procedural 3D exercise coach with proper Push-Up, Dumbbell Row and Plank forms
-- Exercise library and guided workout controls
-- Optional front-facing webcam view during workouts
-- Webcam stays local in the browser and requires explicit permission
-- No AR/VR controls in this build
+## Updates
+- Removed the "Nice work / Session Complete" overlay; ending a workout returns to the exercise library.
+- Push-Up now uses a ground-level side-on posture with hands and feet near the floor instead of a wall-like upright pose.
+- Added a dedicated Dumbbell Press exercise with a bench, dumbbells, supine posture, and controlled press animation.
+- Existing desktop UI, camera option, and other exercises are retained.
 
-## Run
-Open `index.html` in a modern browser. For webcam access, use HTTPS or `localhost` because browsers restrict camera access on insecure origins.
-
-## Vercel
-Upload the contents of this folder to GitHub and import the repository into Vercel. No build command is required.
-
-## Camera
-Click **Enable Front Camera** during a workout and allow browser camera permission. The webcam becomes the background workout view while the 3D coach remains visible in front.
+## Deploy
+Upload `index.html` to GitHub and import the repository into Vercel. No build command is required.
