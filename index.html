@@ -228,13 +228,38 @@ function pose(t){const id=state.exercise,h=$('human');if(!h)return;const phase=(
    setPosePart('thighL',[-.22,.92,0],[-.22,0,0]);setPosePart('thighR',[.22,.92,0],[-.22,0,0]);setPosePart('shinL',[-.22,.25,0],[.12,0,0]);setPosePart('shinR',[.22,.25,0],[.12,0,0]);
    const pull=lift*.55;setPosePart('upperL',[-.48,1.88,.08],[hinge*.35,0,.18-pull]);setPosePart('upperR',[.48,1.88,.08],[hinge*.35,0,-.18+pull]);setPosePart('foreL',[-.62,1.45,.2],[hinge*.15,0,.15-pull]);setPosePart('foreR',[.62,1.45,.2],[hinge*.15,0,-.15+pull]);
    [['dumbbellL',[-.62,1.2,.25]],['dumbbellR',[.62,1.2,.25]],['plateLa',[-.62,1.2,.25]],['plateLb',[-.62,1.2,.25]],['plateRa',[.62,1.2,.25]],['plateRb',[.62,1.2,.25]]].forEach(([n,pos])=>setPosePart(n,pos,[0,0,Math.PI/2]));
- }else if(id==='squat'||id==='lunge'||id==='rdl'){setPosePart('pelvis',[0,1.35-down*.55,0],[0,0,0]);setPosePart('torso',[0,2-down*.35,0],[0,0,0]);setPosePart('head',[0,2.82-down*.35,0],[0,0,0]);setPosePart('thighL',[-.22,.92,0],[0,0,down*.42]);setPosePart('thighR',[.22,.92,0],[0,0,-down*.42]);setPosePart('shinL',[-.22,.25,0],[0,0,-down*.2]);setPosePart('shinR',[.22,.25,0],[0,0,down*.2]);setPosePart('upperL',[-.48,2.2,0],[0,0,down*.25]);setPosePart('upperR',[.48,2.2,0],[0,0,-down*.25]);}
+ }else if(id==='squat'||id==='lunge'||id==='rdl'){
+   // Coordinated lower-body squat: hips, torso, arms, thighs, shins and hands all travel together.
+   const d=down;
+   const hipY=1.35-d*.55;
+   const torsoY=2-d*.34;
+   const headY=2.82-d*.34;
+   const thighY=.92-d*.23;
+   const shinY=.25-d*.08;
+   const armY=2.20-d*.34;
+   const foreY=1.72-d*.48;
+   const kneeBend=d*.46;
+   setPosePart('pelvis',[0,hipY,0],[0,0,0]);
+   setPosePart('torso',[0,torsoY,0],[d*.08,0,0]);
+   setPosePart('head',[0,headY,0],[d*.08,0,0]);
+   // Thighs rotate outward from the hips as the knees bend.
+   setPosePart('thighL',[-.22,thighY,0],[0,0,kneeBend]);
+   setPosePart('thighR',[.22,thighY,0],[0,0,-kneeBend]);
+   // Shins lower slightly and counter-rotate to keep the feet planted.
+   setPosePart('shinL',[-.22,shinY,0],[0,0,-d*.22]);
+   setPosePart('shinR',[.22,shinY,0],[0,0,d*.22]);
+   // Arms/hands descend with the torso instead of floating at standing height.
+   setPosePart('upperL',[-.48,armY,0],[0,0,d*.20]);
+   setPosePart('upperR',[.48,armY,0],[0,0,-d*.20]);
+   setPosePart('foreL',[-.62,foreY,0],[0,0,d*.12]);
+   setPosePart('foreR',[.62,foreY,0],[0,0,-d*.12]);
+}
  else if(id==='curl'){setPosePart('foreL',[-.62,1.72,0],[0,0,-lift*.9]);setPosePart('foreR',[.62,1.72,0],[0,0,lift*.9]);}
  else if(id==='press'||id==='lateral'){setPosePart('foreL',[-.62,1.72,0],[0,0,-lift*1]);setPosePart('foreR',[.62,1.72,0],[0,0,lift*1]);setPosePart('upperL',[-.48,2.2,0],[0,0,-lift*.45]);setPosePart('upperR',[.48,2.2,0],[0,0,lift*.45]);}
  else if(id==='bench'||id==='pullup'||id==='lat'||id==='crunch'||id==='tricep'){const amount=down;setPosePart('torso',[0,2,0],[0,0,amount*.08]);setPosePart('upperL',[-.48,2.2,0],[0,0,amount*.7]);setPosePart('upperR',[.48,2.2,0],[0,0,-amount*.7]);setPosePart('foreL',[-.62,1.72,0],[0,0,-amount*.7]);setPosePart('foreR',[.62,1.72,0],[0,0,amount*.7]);}}
 let last=performance.now(),lastCycle=-1;function frame(now){const dt=now-last;last=now;if(state.playing){const cycle=Math.floor((state.animStart+dt*state.speed)/state.cycleMs);state.animStart+=dt*state.speed;if(cycle!==lastCycle){if(lastCycle>=0){state.rep++;state.totalReps++;updateWorkout();if(state.rep>=exercises[state.exercise].reps){state.playing=false;completeSet()}}lastCycle=cycle}pose(state.animStart);if($('animProgress'))$('animProgress').style.width=((state.animStart%state.cycleMs)/state.cycleMs*100)+'%'}requestAnimationFrame(frame)}requestAnimationFrame(frame);
 function updateCoachVisibility(){const h=$('human');if(h){const a=state.angle;h.setAttribute('rotation',a==='front'?'0 0 0':a==='side'?'0 90 0':'0 35 0')}}
-function startExercise(id=state.exercise){state.exercise=id;state.rep=0;state.set=1;state.elapsed=0;state.totalReps=0;state.totalSets=0;state.sessionStart=performance.now();$('wName').textContent=exercises[id].name;$('wTarget').textContent=exercises[id].reps;$('wRep').textContent='0';$('wSet').textContent=`1/${exercises[id].sets}`;show('workout');document.body.classList.add('workout-running');document.body.classList.remove('workout-ended');state.playing=true;state.animStart=0;lastCycle=-1;updateWorkout();if(state.timer)clearInterval(state.timer);state.timer=setInterval(()=>{if(state.playing){state.elapsed++;$('wTime').textContent=formatTime(state.elapsed)}},1000);}
+function startExercise(id=state.exercise){state.exercise=id;state.rep=0;state.set=1;state.elapsed=0;state.totalReps=0;state.totalSets=0;state.sessionStart=performance.now();$('wName').textContent=exercises[id].name;$('wTarget').textContent=exercises[id].reps;$('wRep').textContent='0';$('wSet').textContent=`1/${exercises[id].sets}`;document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$('workout').classList.add('active');$('infoModal').classList.remove('show');document.body.classList.add('workout-running');document.body.classList.remove('workout-ended');state.screen='workout';state.playing=true;state.animStart=0;lastCycle=-1;updateWorkout();if(state.timer)clearInterval(state.timer);state.timer=setInterval(()=>{if(state.playing){state.elapsed++;$('wTime').textContent=formatTime(state.elapsed)}},1000);}
 function formatTime(s){return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
 function updateWorkout(){const e=exercises[state.exercise];$('wRep').textContent=state.rep;$('wTarget').textContent=e.reps;$('wSet').textContent=`${state.set}/${e.sets}`;$('wProgress').style.width=Math.min(100,state.rep/e.reps*100)+'%';$('wSpeed').textContent=state.speed+'×';$('wPlay').textContent=state.playing?'Running':'Start';$('wPause').textContent=state.playing?'Pause':'Resume'}
 function completeSet(){const e=exercises[state.exercise];state.totalSets++;state.completedExercises.add(state.exercise);toast('Set complete — take a short rest.');if(state.set<e.sets){state.set++;state.rep=0;state.animStart=0;lastCycle=-1;updateWorkout()}else{nextExercise()}}
