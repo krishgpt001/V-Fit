@@ -1,12 +1,13 @@
-# VR Fit Companion — Desktop Exercise Update
+# VR Fit Companion — Desktop Workout Start Update
 
 Desktop-only A-Frame workout companion.
 
-## Updates
-- Removed the "Nice work / Session Complete" overlay; ending a workout returns to the exercise library.
-- Push-Up now uses a ground-level side-on posture with hands and feet near the floor instead of a wall-like upright pose.
-- Added a dedicated Dumbbell Press exercise with a bench, dumbbells, supine posture, and controlled press animation.
-- Existing desktop UI, camera option, and other exercises are retained.
+## Update
+- Starting a guided workout immediately starts the selected exercise animation.
+- Workout controls are kept in the upper-left instead of the center/right.
+- A dedicated **End Workout** control is available during the active workout.
+- Ending the workout returns to the exercise library.
+- Existing exercise models, camera option, and desktop UI remain included.
 
 ## Deploy
-Upload `index.html` to GitHub and import the repository into Vercel. No build command is required.
+Upload `index.html` to GitHub and deploy the repository with Vercel. No build command is required.
