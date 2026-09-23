@@ -1,17 +1,20 @@
-# VR Fit Companion — AR-only Coach
+# VR Fit Companion — Desktop + Front Camera
 
-This build is optimized for Meta Quest immersive AR.
+Desktop-only A-Frame workout companion.
 
-## Experience
-- Real-world passthrough is the main view when immersive AR is supported.
-- The 3D coach stays on the front-left.
-- Only the workout control surface remains visible on the right.
-- The session-complete overlay is never shown during AR; ending a session simply returns to the compact controls.
-- No VR/AR chooser is exposed. The app requests immersive AR from the workout start action.
-- Quest laser pointer + trigger operate the AR controls.
+## Features
+- Crisp desktop workout UI
+- Procedural 3D exercise coach with proper Push-Up, Dumbbell Row and Plank forms
+- Exercise library and guided workout controls
+- Optional front-facing webcam view during workouts
+- Webcam stays local in the browser and requires explicit permission
+- No AR/VR controls in this build
 
-## Deploy
-Upload `index.html`, `README.md`, and `vercel.json` to a GitHub repository and import it into Vercel. No build command is required.
+## Run
+Open `index.html` in a modern browser. For webcam access, use HTTPS or `localhost` because browsers restrict camera access on insecure origins.
 
-## Important
-Immersive AR/passthrough availability is controlled by the browser/device WebXR implementation. The app does not fake a camera feed. It requests `immersive-ar` when available.
+## Vercel
+Upload the contents of this folder to GitHub and import the repository into Vercel. No build command is required.
+
+## Camera
+Click **Enable Front Camera** during a workout and allow browser camera permission. The webcam becomes the background workout view while the 3D coach remains visible in front.

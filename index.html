@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="description" content="VR Fit Companion — an A-Frame WebXR workout coach for Meta Quest and desktop.">
+<meta name="description" content="VR Fit Companion — a desktop A-Frame 3D workout coach with optional front-camera view.">
 <title>VR Fit Companion</title>
 <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
 <style>
@@ -20,10 +20,29 @@ body.ar-active #app{display:none!important}
 body.ar-active #vrMenuToggle{display:none!important}
 body.ar-active #vrMenuRoot{display:block!important}
 body.ar-active .a-enter-vr,body.ar-active .a-enter-ar{display:none!important}
+
+    /* Desktop-only build: WebXR controls are intentionally disabled. */
+    .a-enter-vr, .a-enter-ar, #ar-ui, #vr-ui, #xr-ui, [data-xr-control] { display:none !important; }
 </style>
+
+/* Desktop front-camera workout mode */
+#cameraView{position:fixed;inset:0;z-index:1;display:none;background:#05080b;overflow:hidden}
+#cameraVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
+#cameraShade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,7,10,.08),rgba(4,7,10,.18) 55%,rgba(4,7,10,.48))}
+body.camera-active #cameraView{display:block}
+body.camera-active #scene{z-index:2}
+body.camera-active #environment{display:none!important}
+body.camera-active #app{z-index:5}
+.camera-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.camera-badge{position:absolute;left:18px;top:18px;z-index:2;padding:8px 11px;border-radius:999px;background:rgba(8,12,16,.72);border:1px solid rgba(255,255,255,.14);font-size:12px;color:#dce5ec;backdrop-filter:blur(10px)}
 </style>
 </head>
 <body>
+<div id="cameraView" aria-label="Front camera view">
+  <video id="cameraVideo" autoplay playsinline muted></video>
+  <div id="cameraShade"></div>
+  <div class="camera-badge">● FRONT CAMERA</div>
+</div>
 <a-scene id="scene" renderer="antialias: true; alpha: true; colorManagement: true; highRefreshRate: true" background="color: transparent" xr-mode-ui="XRMode: xr; enterAREnabled: false; enterVREnabled: false" webxr="requiredFeatures: local-floor; optionalFeatures: bounded-floor, hand-tracking, dom-overlay">
   <a-assets timeout="5000"></a-assets>
   <a-entity id="environment">
@@ -87,14 +106,14 @@ body.ar-active .a-enter-vr,body.ar-active .a-enter-ar{display:none!important}
   <section id="home" class="screen active center">
     <div class="landing glass">
       <div class="brand">WEBXR FITNESS SYSTEM</div><h1>VR Fit<br>Companion</h1>
-      <p class="sub">A lightweight immersive workout coach for Meta Quest and the browser — learn form, study movement, understand target muscles, and train with a focused front-facing workout interface.</p>
+      <p class="sub">A focused desktop workout companion — study proper exercise form with a 3D coach, train with a clean interface, and optionally use your front camera as the workout view.</p>
       <div class="actions"><button class="btn primary" id="startBtn">Start Workout</button><button class="btn" id="libraryBtn">Exercise Library</button><button class="btn" id="howBtn">How It Works</button><button class="btn" id="settingsBtn">Settings</button></div>
-      <p class="notice" style="margin-top:20px">Quest mixed-reality mode: choose the AR button when your Quest browser exposes it. The virtual gym is hidden and the coach is placed front-left so the real-world passthrough remains the main view. If AR is unavailable, use normal VR mode as a fallback.</p>
+      <p class="notice" style="margin-top:20px">Desktop mode only. Your front-facing webcam can be enabled during a workout; camera video stays local in the browser.</p>
     </div>
   </section>
   <section id="library" class="screen"><div class="topbar"><div class="left"><button class="btn small" id="backHome">← Home</button><span class="mini-brand">VR FIT COMPANION</span></div><span class="pill" id="vrStatus">Browser mode</span></div><div class="dashboard"><div class="dash-head"><div><h2>Exercise Library</h2><p>Choose an exercise to study technique before you train.</p></div><div class="filters" id="filters"></div></div><div class="grid" id="exerciseGrid"></div></div></section>
   <section id="detail" class="screen"><div class="topbar"><div class="left"><button class="btn small" id="backLibrary">← Library</button><span class="mini-brand">EXERCISE COACH</span></div><button class="btn small" id="detailStart">Start Exercise</button></div><div class="detail"><div class="detail-grid"><div class="detail-card coach-wrap"><div><div class="eyebrow" id="detailCategory"></div><h2 id="detailName"></h2><p class="sub" id="detailDescription"></p></div><div class="coach-stage"><div class="hint">3D COACH · front / side / 3⁄4</div><div id="coachFallback" style="height:100%;display:flex;align-items:center;justify-content:center;color:#71808d">3D coach loads in the A-Frame scene</div></div><div class="controls"><button class="btn small" id="playBtn">▶ Play</button><button class="btn small" id="pauseBtn">Ⅱ Pause</button><button class="btn small" id="restartBtn">↺ Restart</button><button class="btn small speed" data-speed=".5">0.5×</button><button class="btn small speed" data-speed="1">1×</button><button class="btn small speed" data-speed="1.5">1.5×</button><button class="btn small angle" data-angle="front">Front</button><button class="btn small angle" data-angle="side">Side</button><button class="btn small angle" data-angle="three">3/4</button></div><div class="progress"><i id="animProgress"></i></div></div><div class="detail-card"><div class="cols"><div><div class="eyebrow">PRIMARY MUSCLES</div><div class="muscles" id="primaryMuscles"></div></div><div><div class="eyebrow">SECONDARY</div><div class="muscles" id="secondaryMuscles"></div></div></div><h3>How to perform</h3><ol class="list" id="instructions"></ol><h3>Proper form</h3><ul class="list" id="formList"></ul><h3>Common mistakes</h3><ul class="list" id="mistakes"></ul><div class="statrow"><div class="stat"><b id="detailReps">12</b><small>target reps</small></div><div class="stat"><b id="detailSets">3</b><small>sets</small></div><div class="stat"><b id="detailDiff">Beginner</b><small>difficulty</small></div></div><button class="btn primary" id="detailWorkout" style="width:100%">Start Guided Workout</button></div></div></div></section>
-  <section id="workout" class="screen"><div class="topbar"><div class="left"><button class="btn small danger" id="endWorkout">End Workout</button><span class="mini-brand">LIVE SESSION</span></div><span class="pill" id="workoutMode">Virtual coach</span></div><div class="workout-panel"><div class="glass workout-card"><div class="eyebrow">CURRENT EXERCISE</div><h2 id="wName" style="margin:5px 0 2px">Squat</h2><div class="big-number"><span id="wRep">0</span><span style="font-size:20px;color:var(--muted)"> / <span id="wTarget">12</span> reps</span></div><div class="statrow"><div class="stat"><b id="wSet">1/3</b><small>set</small></div><div class="stat"><b id="wTime">00:00</b><small>time</small></div><div class="stat"><b id="wSpeed">1×</b><small>speed</small></div></div><div class="progress"><i id="wProgress"></i></div><div class="controls"><button class="btn primary small" id="wPlay">Start</button><button class="btn small" id="wPause">Pause</button><button class="btn small" id="wComplete">Complete Set</button><button class="btn small" id="wNext">Next Exercise</button></div><div class="notice" style="margin-top:12px">Prototype rep counter: reps are generated from the demonstration cycle, not camera-based motion detection.</div></div></div><div class="toast" id="toast"></div></section>
+  <section id="workout" class="screen"><div class="topbar"><div class="left"><button class="btn small danger" id="endWorkout">End Workout</button><span class="mini-brand">LIVE SESSION</span></div><span class="pill" id="workoutMode">Virtual coach</span></div><div class="workout-panel"><div class="glass workout-card"><div class="eyebrow">CURRENT EXERCISE</div><h2 id="wName" style="margin:5px 0 2px">Squat</h2><div class="big-number"><span id="wRep">0</span><span style="font-size:20px;color:var(--muted)"> / <span id="wTarget">12</span> reps</span></div><div class="statrow"><div class="stat"><b id="wSet">1/3</b><small>set</small></div><div class="stat"><b id="wTime">00:00</b><small>time</small></div><div class="stat"><b id="wSpeed">1×</b><small>speed</small></div></div><div class="progress"><i id="wProgress"></i></div><div class="controls"><button class="btn primary small" id="wPlay">Start</button><button class="btn small" id="wPause">Pause</button><button class="btn small" id="wComplete">Complete Set</button><button class="btn small" id="wNext">Next Exercise</button><button class="btn small" id="cameraBtn">Enable Front Camera</button></div><div class="camera-actions"><button class="btn small hidden" id="cameraOffBtn">Turn Camera Off</button></div><div class="notice" style="margin-top:12px">Prototype rep counter: reps are generated from the demonstration cycle, not camera-based motion detection.</div></div></div><div class="toast" id="toast"></div></section>
   <section id="summary" class="screen center"><div class="modal-card glass"><div class="brand">SESSION COMPLETE</div><h2 style="font-size:44px;margin:8px 0">Nice work.</h2><div class="statrow"><div class="stat"><b id="sExercises">1</b><small>exercises</small></div><div class="stat"><b id="sSets">1</b><small>sets</small></div><div class="stat"><b id="sReps">12</b><small>reps</small></div></div><p class="notice" id="sDuration">Duration: 00:00</p><div class="actions"><button class="btn primary" id="restartSession">Restart Workout</button><button class="btn" id="summaryLibrary">Exercise Library</button><button class="btn" id="summaryHome">Home</button></div></div></section>
   <div class="modal" id="infoModal"><div class="modal-card glass"><div class="brand">VR FIT COMPANION</div><h2 id="modalTitle">How it works</h2><p id="modalText" class="sub" style="font-size:15px">Choose an exercise, study the procedural 3D coach, then start a guided set. In VR, Quest controllers use laser pointers and triggers for UI selection. Thumbstick locomotion is available through A-Frame movement controls.</p><div class="actions"><button class="btn primary" id="closeModal">Close</button></div></div></div>
 </div>
@@ -192,7 +211,7 @@ function setVrPresentation(active){
 
 function initVrUI(){const cam=$('cameraRig').querySelector('a-camera');if(cam){cam.appendChild($('vrMenuRoot'));cam.appendChild($('vrMenuToggle'));}wireVrButton('vrMenuToggle',()=>setVrMenuVisible(!$('vrMenuRoot').getAttribute('visible')));wireVrButton('vrMenuLibrary',()=>{setVrMenuVisible(true);vrSelect('squat');});wireVrButton('vrMenuStart',vrStart);wireVrButton('vrMenuPause',vrPause);wireVrButton('vrMenuPrev',()=>vrCycle(-1));wireVrButton('vrMenuNext',()=>vrCycle(1));wireVrButton('vrPickPushup',()=>vrSelect('pushup'));wireVrButton('vrPickRow',()=>vrSelect('row'));wireVrButton('vrPickPlank',()=>vrSelect('plank'));}
 
-$('startBtn').onclick=()=>startExercise('squat');$('libraryBtn').onclick=()=>{buildFilters();renderLibrary();show('library')};$('backHome').onclick=()=>show('home');$('backLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('detailStart').onclick=()=>{startExercise();enterAROnly();};$('detailWorkout').onclick=()=>startExercise();$('playBtn').onclick=()=>{state.playing=true;state.animStart=0;lastCycle=-1};$('pauseBtn').onclick=()=>state.playing=false;$('restartBtn').onclick=()=>{state.animStart=0;state.rep=0;lastCycle=-1};document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);updateWorkout()});document.querySelectorAll('.angle').forEach(b=>b.onclick=()=>{state.angle=b.dataset.angle;updateCoachVisibility()});$('wPlay').onclick=()=>{state.playing=true};$('wPause').onclick=()=>{state.playing=false};$('wComplete').onclick=()=>{state.rep=exercises[state.exercise].reps;updateWorkout();completeSet()};$('wNext').onclick=nextExercise;$('endWorkout').onclick=finishWorkout;$('restartSession').onclick=()=>startExercise('squat');$('summaryLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('summaryHome').onclick=()=>show('home');$('howBtn').onclick=()=>openInfo('How it works','Choose an exercise, study the procedural 3D coach, then start a guided set. On Quest, use the AR button when available for real-world camera passthrough; the virtual gym is hidden and the coach stays front-left. Controllers use laser pointers and triggers for UI selection.');$('settingsBtn').onclick=()=>openInfo('Settings','The prototype uses snap-friendly controller interaction, smooth A-Frame movement, a dark performance-oriented environment and local-only workout state. Browser support for WebXR varies by device.');$('closeModal').onclick=()=>$('infoModal').classList.remove('show');
+$('startBtn').onclick=()=>startExercise('squat');$('libraryBtn').onclick=()=>{buildFilters();renderLibrary();show('library')};$('backHome').onclick=()=>show('home');$('backLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('detailStart').onclick=()=>startExercise();$('detailWorkout').onclick=()=>startExercise();$('playBtn').onclick=()=>{state.playing=true;state.animStart=0;lastCycle=-1};$('pauseBtn').onclick=()=>state.playing=false;$('restartBtn').onclick=()=>{state.animStart=0;state.rep=0;lastCycle=-1};document.querySelectorAll('.speed').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);updateWorkout()});document.querySelectorAll('.angle').forEach(b=>b.onclick=()=>{state.angle=b.dataset.angle;updateCoachVisibility()});$('wPlay').onclick=()=>{state.playing=true};$('wPause').onclick=()=>{state.playing=false};$('wComplete').onclick=()=>{state.rep=exercises[state.exercise].reps;updateWorkout();completeSet()};$('wNext').onclick=nextExercise;$('endWorkout').onclick=finishWorkout;$('restartSession').onclick=()=>startExercise('squat');$('summaryLibrary').onclick=()=>{buildFilters();renderLibrary();show('library')};$('summaryHome').onclick=()=>show('home');$('howBtn').onclick=()=>openInfo('How it works','Choose an exercise, study the procedural 3D coach, then start a guided set. On Quest, use the AR button when available for real-world camera passthrough; the virtual gym is hidden and the coach stays front-left. Controllers use laser pointers and triggers for UI selection.');$('settingsBtn').onclick=()=>openInfo('Settings','The prototype uses snap-friendly controller interaction, smooth A-Frame movement, a dark performance-oriented environment and local-only workout state. Browser support for WebXR varies by device.');$('closeModal').onclick=()=>$('infoModal').classList.remove('show');
 const scene=$('scene');
 async function enterAROnly(){
   try{
@@ -222,9 +241,53 @@ scene.addEventListener('exit-vr',()=>{
 });
 if(!navigator.xr)$('vrStatus').textContent='WebXR unavailable';
 // The product is AR-first: no VR/AR chooser is exposed.
-$('startBtn').onclick=()=>{startExercise('squat');enterAROnly();};
+$('startBtn').onclick=()=>startExercise('squat');
 $('libraryBtn').onclick=()=>{buildFilters();renderLibrary();show('library');};
-initVrUI();buildFilters();renderLibrary();openDetail('squat');show('home');
+
+// Desktop front-camera support. The webcam feed is optional and requires user permission.
+let cameraStream = null;
+async function enableFrontCamera(){
+  const video=$('cameraVideo');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('Camera access is not supported by this browser.'); return; }
+  try{
+    cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'user'},width:{ideal:1280},height:{ideal:720}},audio:false});
+    video.srcObject=cameraStream;
+    document.body.classList.add('camera-active');
+    $('cameraBtn').textContent='Camera On';
+    $('cameraOffBtn').classList.remove('hidden');
+    // Put the coach in a front-left desktop position while the real camera is behind it.
+    const coach=$('coach3d');
+    if(coach){coach.setAttribute('position','-0.75 0 -2.8');coach.setAttribute('scale','.9 .9 .9');}
+    toast('Front camera enabled.');
+  }catch(err){
+    console.warn(err);
+    toast(err.name==='NotAllowedError'?'Camera permission was denied.':'Could not start the front camera.');
+  }
+}
+function disableFrontCamera(){
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  $('cameraVideo').srcObject=null;
+  document.body.classList.remove('camera-active');
+  $('cameraBtn').textContent='Enable Front Camera';
+  $('cameraOffBtn').classList.add('hidden');
+  const coach=$('coach3d');
+  if(coach){coach.setAttribute('position','0 0 -3');coach.setAttribute('scale','1 1 1');}
+}
+window.addEventListener('beforeunload',disableFrontCamera);
+
+// Desktop-only initialization. WebXR/AR is intentionally disabled in this build.
+$('startBtn').onclick=()=>startExercise('squat');
+$('libraryBtn').onclick=()=>{buildFilters();renderLibrary();show('library');};
+$('cameraBtn').onclick=enableFrontCamera;
+$('cameraOffBtn').onclick=disableFrontCamera;
+document.querySelectorAll('.a-enter-vr,.a-enter-ar').forEach(el=>el.remove()); if($('vrMenuRoot')) $('vrMenuRoot').setAttribute('visible',false); buildFilters();renderLibrary();openDetail('squat');show('home');
 </script>
+<script>
+// Desktop-only build: prevent WebXR entry while preserving the 3D experience.
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.a-enter-vr, .a-enter-ar').forEach(el => el.remove());
+});
+</script>
+
 </body>
 </html>
