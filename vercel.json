@@ -1,0 +1,11 @@
+{
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {"key": "Permissions-Policy", "value": "xr-spatial-tracking=(self), camera=(self), microphone=()"}
+      ]
+    }
+  ]
+}
