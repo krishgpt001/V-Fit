@@ -41,6 +41,25 @@ body.ar-active .a-enter-vr,body.ar-active .a-enter-ar{display:none!important}
 .dashboard:hover .grid,.detail:hover .detail-grid,.workout-panel:hover .workout-card{animation:panelIn .16s ease-out both;}
 @keyframes panelIn{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media(max-width:800px){.dashboard,.detail{right:12px;top:62px}.workout-panel{left:12px;right:auto;top:62px}.dashboard:hover,.dashboard:focus-within{width:calc(100vw - 24px);height:calc(100% - 74px)}.detail:hover,.detail:focus-within{width:calc(100vw - 24px);height:calc(100% - 74px);padding:0 0 12px 12px}.workout-panel:hover,.workout-panel:focus-within{width:calc(100vw - 24px);max-height:calc(100% - 74px)}}
+
+<style>
+/* Active workout: keep the coach completely unobstructed. */
+body.workout-running .workout-panel{
+  display:none !important;
+}
+body.workout-running .topbar{
+  position:absolute;
+  left:20px; top:20px; right:auto;
+  z-index:50;
+}
+body.workout-ended .dashboard{
+  left:20px; right:auto;
+}
+/* Subtle polish for the coach area without covering the model. */
+.coach-stage{
+  box-shadow:inset 0 0 80px rgba(255,255,255,.025);
+}
+</style>
 </style>
 
 /* Desktop front-camera workout mode */
@@ -215,12 +234,12 @@ function pose(t){const id=state.exercise,h=$('human');if(!h)return;const phase=(
  else if(id==='bench'||id==='pullup'||id==='lat'||id==='crunch'||id==='tricep'){const amount=down;setPosePart('torso',[0,2,0],[0,0,amount*.08]);setPosePart('upperL',[-.48,2.2,0],[0,0,amount*.7]);setPosePart('upperR',[.48,2.2,0],[0,0,-amount*.7]);setPosePart('foreL',[-.62,1.72,0],[0,0,-amount*.7]);setPosePart('foreR',[.62,1.72,0],[0,0,amount*.7]);}}
 let last=performance.now(),lastCycle=-1;function frame(now){const dt=now-last;last=now;if(state.playing){const cycle=Math.floor((state.animStart+dt*state.speed)/state.cycleMs);state.animStart+=dt*state.speed;if(cycle!==lastCycle){if(lastCycle>=0){state.rep++;state.totalReps++;updateWorkout();if(state.rep>=exercises[state.exercise].reps){state.playing=false;completeSet()}}lastCycle=cycle}pose(state.animStart);if($('animProgress'))$('animProgress').style.width=((state.animStart%state.cycleMs)/state.cycleMs*100)+'%'}requestAnimationFrame(frame)}requestAnimationFrame(frame);
 function updateCoachVisibility(){const h=$('human');if(h){const a=state.angle;h.setAttribute('rotation',a==='front'?'0 0 0':a==='side'?'0 90 0':'0 35 0')}}
-function startExercise(id=state.exercise){state.exercise=id;state.rep=0;state.set=1;state.elapsed=0;state.totalReps=0;state.totalSets=0;state.sessionStart=performance.now();$('wName').textContent=exercises[id].name;$('wTarget').textContent=exercises[id].reps;$('wRep').textContent='0';$('wSet').textContent=`1/${exercises[id].sets}`;show('workout');state.playing=true;state.animStart=0;lastCycle=-1;updateWorkout();if(state.timer)clearInterval(state.timer);state.timer=setInterval(()=>{if(state.playing){state.elapsed++;$('wTime').textContent=formatTime(state.elapsed)}},1000);}
+function startExercise(id=state.exercise){state.exercise=id;state.rep=0;state.set=1;state.elapsed=0;state.totalReps=0;state.totalSets=0;state.sessionStart=performance.now();$('wName').textContent=exercises[id].name;$('wTarget').textContent=exercises[id].reps;$('wRep').textContent='0';$('wSet').textContent=`1/${exercises[id].sets}`;show('workout');document.body.classList.add('workout-running');document.body.classList.remove('workout-ended');state.playing=true;state.animStart=0;lastCycle=-1;updateWorkout();if(state.timer)clearInterval(state.timer);state.timer=setInterval(()=>{if(state.playing){state.elapsed++;$('wTime').textContent=formatTime(state.elapsed)}},1000);}
 function formatTime(s){return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
 function updateWorkout(){const e=exercises[state.exercise];$('wRep').textContent=state.rep;$('wTarget').textContent=e.reps;$('wSet').textContent=`${state.set}/${e.sets}`;$('wProgress').style.width=Math.min(100,state.rep/e.reps*100)+'%';$('wSpeed').textContent=state.speed+'×';$('wPlay').textContent=state.playing?'Running':'Start';$('wPause').textContent=state.playing?'Pause':'Resume'}
 function completeSet(){const e=exercises[state.exercise];state.totalSets++;state.completedExercises.add(state.exercise);toast('Set complete — take a short rest.');if(state.set<e.sets){state.set++;state.rep=0;state.animStart=0;lastCycle=-1;updateWorkout()}else{nextExercise()}}
 function nextExercise(){const ids=Object.keys(exercises),i=ids.indexOf(state.exercise);const next=ids[(i+1)%ids.length];state.exercise=next;const e=exercises[next];state.rep=0;state.set=1;state.animStart=0;lastCycle=-1;$('wName').textContent=e.name;$('wTarget').textContent=e.reps;$('wSet').textContent=`1/${e.sets}`;toast('Next exercise loaded.');updateWorkout();buildCoach(next)}
-function finishWorkout(){if(state.timer)clearInterval(state.timer);state.playing=false;state.rep=0;state.set=1;state.animStart=0;lastCycle=-1;state.elapsed=0;buildFilters();renderLibrary();show('library');toast('Workout ended — choose your next exercise.');}
+function finishWorkout(){if(state.timer)clearInterval(state.timer);state.playing=false;state.rep=0;state.set=1;state.animStart=0;lastCycle=-1;state.elapsed=0;document.body.classList.remove('workout-running');document.body.classList.add('workout-ended');buildFilters();renderLibrary();show('library');toast('Workout ended — choose your next exercise.');}
 function openInfo(title,text){$('modalTitle').textContent=title;$('modalText').textContent=text;$('infoModal').classList.add('show')}function vrIndex(){return ['squat','pushup','row','plank'].filter(id=>exercises[id]);}
 function updateVrMenu(){const e=exercises[state.exercise];$('vrMenuExercise').setAttribute('value',`Exercise: ${e.name}`);$('vrMenuStartText').setAttribute('value',state.playing?'RUNNING':'START');$('vrMenuPauseText').setAttribute('value',state.playing?'PAUSE':'RESUME');}
 function setVrMenuVisible(v){$('vrMenuRoot').setAttribute('visible',v);updateVrMenu();}
